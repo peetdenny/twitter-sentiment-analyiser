@@ -7,6 +7,7 @@ from birdy.twitter import StreamClient
 from textblob import TextBlob
 from datetime import datetime
 import os
+import sys
 
 
 CONSUMER_KEY = os.getenv('CONSUMER_KEY')
@@ -22,28 +23,44 @@ client = StreamClient(CONSUMER_KEY,
                     ACCESS_TOKEN_SECRET)
 
 
-response = client.stream.statuses.filter.post(track='#trump')
 
 #NLP File stuff
 
 
-limit = 10
-i = 1
-stock_price = [{"time": datetime.now(), "price": 0, "tweet": "Initialising...", "polarity": 0}]
+stock_price = [
+    {
+        "time": datetime.now(), 
+        "price": 0, 
+        "tweet": "Initialising...", 
+        "polarity": 0
+    }
+]
 
 def update_stock_price(tweet, polarity):
     stock_price.append({"time": datetime.now(), "price": stock_price[-1]["price"] + polarity, "tweet": tweet, "polarity": polarity})
 
-for data in response.stream():
-    if data.lang == 'en':
-        tweet = TextBlob(data.text)
-        update_stock_price(data.text, tweet.sentiment.polarity)
-        i += 1
-    if i >= limit:
-        print(" Have done %s tweets, now exiting" % i)
-        break
+def launch(term, limit):
+    print("Parsing tweets for %s" %term)
+    i = 1
+    response = client.stream.statuses.filter.post(track="#%s" % term)
+    for data in response.stream():
+        if data.lang == 'en':
+            tweet = TextBlob(data.text)
+            update_stock_price(data.text, tweet.sentiment.polarity)
+            s = "%s ---   %s" % (tweet.sentiment.polarity, data.text)
+            print(s,end="\r", flush=True)
+            i += 1
+        if i >= limit:
+            print(" Have done %s tweets, now exiting" % i)
+            break
 
-print(len(stock_price))
-for price in stock_price:
-    print("%s - %s" % (price["price"], price["tweet"]))
+    print(len(stock_price))
+    for price in stock_price:
+        print("%s - %s" % (price["price"], price["tweet"]))
 
+
+
+if __name__ == "__main__":
+    term = sys.argv[1]
+    limit = sys.argv[2]
+    launch(term, int(limit))
