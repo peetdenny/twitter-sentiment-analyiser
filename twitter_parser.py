@@ -1,6 +1,7 @@
 # tracks the sentiment toward a given hashtag over time
 # 20 mins got twitter stream printed out
 # 40 mins got basic sentiment done
+# 60 mins got stock price done and checked into git with externalised env vars <3
 
 from birdy.twitter import StreamClient
 from textblob import TextBlob
@@ -31,7 +32,7 @@ i = 1
 stock_price = [{"time": datetime.now(), "price": 0, "tweet": "Initialising...", "polarity": 0}]
 
 def update_stock_price(tweet, polarity):
-    stock_price.append({"time": datetime.now(), "price": stock_price.pop()["price"] + polarity, "tweet": tweet, "polarity": polarity})
+    stock_price.append({"time": datetime.now(), "price": stock_price[-1]["price"] + polarity, "tweet": tweet, "polarity": polarity})
 
 for data in response.stream():
     if data.lang == 'en':
