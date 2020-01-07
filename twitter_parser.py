@@ -8,6 +8,7 @@ from textblob import TextBlob
 from datetime import datetime
 import os
 import sys
+import csv
 
 
 CONSUMER_KEY = os.getenv('CONSUMER_KEY')
@@ -36,27 +37,24 @@ stock_price = [
     }
 ]
 
-def update_stock_price(tweet, polarity):
-    stock_price.append({"time": datetime.now(), "price": stock_price[-1]["price"] + polarity, "tweet": tweet, "polarity": polarity})
+def update_stock_price(tweet, polarity, score):
+    stock_price.append({"time": datetime.now(), "price": score, "tweet": tweet, "polarity": polarity})
 
 def launch(term, limit):
     print("Parsing tweets for %s" %term)
     i = 1
     response = client.stream.statuses.filter.post(track="#%s" % term)
-    for data in response.stream():
-        if data.lang == 'en':
-            tweet = TextBlob(data.text)
-            update_stock_price(data.text, tweet.sentiment.polarity)
-            s = "%s ---   %s" % (tweet.sentiment.polarity, data.text)
-            print(s,end="\r", flush=True)
-            i += 1
-        if i >= limit:
-            print(" Have done %s tweets, now exiting" % i)
-            break
-
-    print(len(stock_price))
-    for price in stock_price:
-        print("%s - %s" % (price["price"], price["tweet"]))
+    with open('tweets.csv', 'w', newline='') as csvfile:
+        row_writer = csv.writer(csvfile, delimiter=',')
+        for data in response.stream():
+            if data.lang == 'en':
+                tweet = TextBlob(data.text)
+                score = stock_price[-1]["price"] + tweet.sentiment.polarity
+                update_stock_price(data.text, tweet.sentiment.polarity, score)
+                row_writer.writerow([tweet.sentiment.polarity, score, datetime.now(), data.text ])
+                i += 1
+            if i >= limit:
+                quit()
 
 
 
